@@ -109,6 +109,25 @@ public class Deque<T> : /*IList<T>,*/ IEnumerable<T>
         return -1;
     }
 
+    public void CopyTo(T[] array, int arrayIndex)
+    {
+        if (array == null)
+            throw new ArgumentNullException(nameof(array));
+
+        if (arrayIndex < 0)
+            throw new ArgumentOutOfRangeException(nameof(arrayIndex));
+
+        if (array.Length - arrayIndex < Length)
+            throw new ArgumentException();
+
+        int i = 0;
+        foreach (T item in this)
+        {
+            array[arrayIndex + i] = this[i];
+            i++;
+        }
+    }
+
     private void Grow()
     {
         Block[] newBlocks = new Block[blocks.Length * 2];
@@ -226,6 +245,21 @@ public class MyTests
 
         Assert.AreEqual(-1, d.IndexOf(-50));
         Assert.AreEqual(-1, d.IndexOf(100000));
+    }
+
+    [Test]
+    public void copyToWorks()
+    {
+        var d = new Deque<int>();
+
+        for (int i = 0; i < 10; i++)
+            d.Add(i);
+
+        int[] array = new int[15];
+        d.CopyTo(array, 5);
+
+        for (int i = 0; i < 10; i++)
+            Assert.AreEqual(i, array[5 + i]);
     }
 }
 
