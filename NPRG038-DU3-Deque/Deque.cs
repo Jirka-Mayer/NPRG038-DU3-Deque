@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using NUnit.Framework;
 
-public class Deque<T> : /*IList<T>,*/ IEnumerable<T>
+public class Deque<T> : IList<T>, IEnumerable<T>
 {
     public const int BlockSize = 16;
 
@@ -140,6 +140,29 @@ public class Deque<T> : /*IList<T>,*/ IEnumerable<T>
         for (int i = Length - 1; i > index; i--)
             this[i] = this[i - 1];
         this[index] = item;
+    }
+
+    public void RemoveAt(int index)
+    {
+        if (index < 0 || index >= Length)
+            throw new ArgumentOutOfRangeException(nameof(index));
+
+        for (int i = index; i < Length - 1; i++)
+            this[i] = this[i + 1];
+        
+        this[Length - 1] = default(T);
+        Length--;
+    }
+
+    public bool Remove(T item)
+    {
+        int index = IndexOf(item);
+        
+        if (index == -1)
+            return false;
+
+        RemoveAt(index);
+        return true;
     }
 
     private void Grow()
@@ -287,6 +310,19 @@ public class MyTests
         d.Insert(0, -1);
         for (int i = 0; i < 11; i++)
             Assert.AreEqual(i-1, d[i]);
+    }
+
+    [Test]
+    public void removeAtWorks()
+    {
+        var d = new Deque<int>();
+
+        for (int i = 0; i < 10; i++)
+            d.Add(i);
+
+        d.RemoveAt(0);
+        for (int i = 0; i < 9; i++)
+            Assert.AreEqual(i+1, d[i]);
     }
 }
 
