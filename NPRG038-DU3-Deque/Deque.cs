@@ -21,11 +21,17 @@ public class Deque<T> : /*IList<T>,*/ IEnumerable<T>
 
     private int firstItem = -1;
     public int Length { get; private set; } = 0;
+    public int Count => Length;
     private int lastItem => (firstItem + Length) % blocks.Length * BlockSize;
     private int firstBlock => firstItem / BlockSize;
     private int lastBlock => lastItem / BlockSize;
     public bool Empty => Length == 0;
     public bool Full => Length == blocks.Length * BlockSize;
+
+    public bool IsFixedSize => false;
+    public bool IsReadOnly => false;
+    public bool IsSynchronized => false;
+    public object SyncRoot => throw new InvalidOperationException();
 
     public Deque(int capacity = BlockSize * 2)
     {
@@ -33,8 +39,6 @@ public class Deque<T> : /*IList<T>,*/ IEnumerable<T>
             capacity = BlockSize;
 
         blocks = new Block[capacity / BlockSize];
-        for (int i = 0; i < blocks.Length; i++)
-            blocks[i] = new Block();
     }
 
     public T this[int index]
@@ -45,6 +49,8 @@ public class Deque<T> : /*IList<T>,*/ IEnumerable<T>
                 throw new IndexOutOfRangeException();
 
             index = (firstItem + index) % (blocks.Length * BlockSize);
+            if (blocks[index / BlockSize] == null)
+                blocks[index / BlockSize] = new Block();
             return blocks[index / BlockSize].items[index % BlockSize];
         }
 
@@ -54,6 +60,8 @@ public class Deque<T> : /*IList<T>,*/ IEnumerable<T>
                 throw new IndexOutOfRangeException();
 
             index = (firstItem + index) % (blocks.Length * BlockSize);
+            if (blocks[index / BlockSize] == null)
+                blocks[index / BlockSize] = new Block();
             blocks[index / BlockSize].items[index % BlockSize] = value;
         }
     }
@@ -76,14 +84,41 @@ public class Deque<T> : /*IList<T>,*/ IEnumerable<T>
         this[Length - 1] = item;
     }
 
+    public void Clear()
+    {
+        firstItem = 0;
+        Length = 0;
+
+        blocks = new Block[2];
+    }
+
+    public bool Contains(T item) => IndexOf(item) != -1;
+
+    public int IndexOf(T item)
+    {
+        int index = 0;
+        
+        foreach (T i in this)
+        {
+            if (i.Equals(item))
+                return index;
+
+            index++;
+        }
+
+        return -1;
+    }
+
     private void Grow()
     {
         Block[] newBlocks = new Block[blocks.Length * 2];
-        for (int i = 0; i < newBlocks.Length; i++)
-            newBlocks[i] = new Block();
         
         for (int i = 0; i < Length; i++)
+        {
+            if (newBlocks[i / BlockSize] == null)
+                newBlocks[i / BlockSize] = new Block();
             newBlocks[i / BlockSize].items[i % BlockSize] = this[i];
+        }
 
         blocks = newBlocks;
         firstItem = 0;
@@ -176,6 +211,21 @@ public class MyTests
         d.Add(-1);
         Assert.False(d.Full);
         Assert.AreEqual(-1, d[8 * Deque<int>.BlockSize]);
+    }
+
+    [Test]
+    public void indexOfWorks()
+    {
+        var d = new Deque<int>();
+
+        for (int i = 0; i < 50; i++)
+            d.Add(i);
+
+        for (int i = 0; i < 50; i++)
+            Assert.AreEqual(i, d.IndexOf(i));
+
+        Assert.AreEqual(-1, d.IndexOf(-50));
+        Assert.AreEqual(-1, d.IndexOf(100000));
     }
 }
 
