@@ -5,7 +5,7 @@ using NUnit.Framework;
 
 public class Deque<T> : /*IList<T>,*/ IEnumerable<T>
 {
-    private const int BlockSize = 10;
+    public const int BlockSize = 16;
 
     private class Block
     {
@@ -27,9 +27,12 @@ public class Deque<T> : /*IList<T>,*/ IEnumerable<T>
     public bool Empty => Length == 0;
     public bool Full => Length == blocks.Length * BlockSize;
 
-    public Deque()
+    public Deque(int capacity = BlockSize * 2)
     {
-        blocks = new Block[10];
+        if (capacity < BlockSize)
+            capacity = BlockSize;
+
+        blocks = new Block[capacity / BlockSize];
         for (int i = 0; i < blocks.Length; i++)
             blocks[i] = new Block();
     }
@@ -75,7 +78,15 @@ public class Deque<T> : /*IList<T>,*/ IEnumerable<T>
 
     private void Grow()
     {
-        // TODO: grow the block array
+        Block[] newBlocks = new Block[blocks.Length * 2];
+        for (int i = 0; i < newBlocks.Length; i++)
+            newBlocks[i] = new Block();
+        
+        for (int i = 0; i < Length; i++)
+            newBlocks[i / BlockSize].items[i % BlockSize] = this[i];
+
+        blocks = newBlocks;
+        firstItem = 0;
     }
 
     public IEnumerator<T> GetEnumerator()
@@ -142,6 +153,29 @@ public class MyTests
             Assert.AreEqual(index, item - 1);
             index++;
         }
+    }
+
+    [Test]
+    public void itCanGrow()
+    {
+        var d = new Deque<int>(Deque<int>.BlockSize);
+
+        Assert.True(d.Empty);
+        Assert.False(d.Full); // has some initial capacity
+
+        // note that 8 is a power of 2 (block count doubles)
+        for (int i = 0; i < 8 * Deque<int>.BlockSize; i++)
+            d.Add(i);
+
+        for (int i = 0; i < 8 * Deque<int>.BlockSize; i++)
+            Assert.AreEqual(i, d[i]);
+
+        Assert.True(d.Full);
+        Assert.False(d.Empty);
+
+        d.Add(-1);
+        Assert.False(d.Full);
+        Assert.AreEqual(-1, d[8 * Deque<int>.BlockSize]);
     }
 }
 
