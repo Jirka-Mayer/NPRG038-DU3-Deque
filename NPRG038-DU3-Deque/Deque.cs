@@ -280,6 +280,11 @@ public class Deque<T> : IList<T>, IDeque<T>, IEnumerable<T>
         return new Enumerator<T>(this);
     }
 
+    public IEnumerator<T> GetInversedEnumerator()
+    {
+        return new InversedEnumerator<T>(this);
+    }
+
     IEnumerator IEnumerable.GetEnumerator()
     {
         return GetEnumerator();
@@ -316,11 +321,118 @@ public class Deque<T> : IList<T>, IDeque<T>, IEnumerable<T>
             deque.enumeratorCount--;
         }
     }
+
+    public class InversedEnumerator<U> : IEnumerator<U>
+    {
+        public Deque<U> deque;
+        int position;
+
+        public InversedEnumerator(Deque<U> deque)
+        {
+            this.deque = deque;
+            deque.enumeratorCount++;
+
+            position = deque.Length - 1;
+        }
+
+        public bool MoveNext()
+        {
+            position--;
+            return (position >= 0);
+        }
+
+        public void Reset()
+        {
+            position = deque.Length - 1;
+        }
+
+        object IEnumerator.Current => Current;
+
+        public U Current => deque[position];
+
+        public void Dispose()
+        {
+            deque.enumeratorCount--;
+        }
+    }
+}
+
+public class InvertDequeAdapter<T> : IDeque<T>, IList<T>
+{
+    private Deque<T> subject;
+
+    public int Count => subject.Length;
+    public bool IsReadOnly => subject.IsReadOnly;
+    public bool IsSynchronized => subject.IsSynchronized;
+
+    public InvertDequeAdapter(Deque<T> subject)
+    {
+        this.subject = subject;
+    }
+
+    public T this[int index]
+    {
+        get => subject[subject.Length - 1 - index];
+        set => subject[subject.Length - 1 - index] = value;
+    }
+
+    public void PushBack(T item) => subject.PushFront(item);
+    public void PushFront(T item) => subject.PushBack(item);
+    public T PopBack() => subject.PopFront();
+    public T PopFront() => subject.PopBack();
+
+    public void Clear() => subject.Clear();
+    public void Add(T item) => subject.PushFront(item);
+    public bool Contains(T item) => subject.Contains(item);
+    public bool Remove(T item) => subject.Remove(item);
+    public void Insert(int index, T item) => subject.Insert(subject.Length - 1 - index, item);
+    public void RemoveAt(int index) => subject.RemoveAt(subject.Length - 1 - index);
+
+    public void CopyTo(T[] array, int arrayIndex)
+    {
+        if (array == null)
+            throw new ArgumentNullException(nameof(array));
+
+        if (arrayIndex < 0)
+            throw new ArgumentOutOfRangeException(nameof(arrayIndex));
+
+        if (array.Length - arrayIndex < subject.Length)
+            throw new ArgumentException();
+
+        int i = 0;
+        foreach (T item in this)
+        {
+            array[arrayIndex + i] = this[i];
+            i++;
+        }
+    }
+    
+    public int IndexOf(T item)
+    {
+        int index = subject.IndexOf(item);
+        if (index == -1)
+            return -1;
+        return subject.Length - 1 - index;
+    }
+
+
+    public IEnumerator<T> GetEnumerator()
+    {
+        return subject.GetInversedEnumerator();
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return GetEnumerator();
+    }
 }
 
 public static class DequeTest
 {
-
+    public static IList<T> GetReverseView<T>(Deque<T> d)
+    {
+		return new InvertDequeAdapter<T>(d);
+	}
 }
 
 /**/
