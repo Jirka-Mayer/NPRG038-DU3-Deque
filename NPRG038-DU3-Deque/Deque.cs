@@ -128,6 +128,20 @@ public class Deque<T> : /*IList<T>,*/ IEnumerable<T>
         }
     }
 
+    public void Insert(int index, T item)
+    {
+        if (index < 0 || index > Length)
+            throw new ArgumentOutOfRangeException(nameof(index));
+
+        if (Full)
+            Grow();
+
+        Length++;
+        for (int i = Length - 1; i > index; i--)
+            this[i] = this[i - 1];
+        this[index] = item;
+    }
+
     private void Grow()
     {
         Block[] newBlocks = new Block[blocks.Length * 2];
@@ -260,6 +274,19 @@ public class MyTests
 
         for (int i = 0; i < 10; i++)
             Assert.AreEqual(i, array[5 + i]);
+    }
+
+    [Test]
+    public void insertWorks()
+    {
+        var d = new Deque<int>();
+
+        for (int i = 0; i < 10; i++)
+            d.Add(i);
+
+        d.Insert(0, -1);
+        for (int i = 0; i < 11; i++)
+            Assert.AreEqual(i-1, d[i]);
     }
 }
 
