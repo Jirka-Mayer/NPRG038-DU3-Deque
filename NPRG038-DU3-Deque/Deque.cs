@@ -31,7 +31,7 @@ public interface IDeque<T> : IEnumerable<T>
     T PopFront();
 }
 
-public class Deque<T> : IList<T>, IEnumerable<T>
+public class Deque<T> : IList<T>, IDeque<T>, IEnumerable<T>
 {
     public const int BlockSize = 16;
 
@@ -225,6 +225,56 @@ public class Deque<T> : IList<T>, IEnumerable<T>
         firstItem = 0;
     }
 
+    public void PushBack(T item)
+    {
+        GuardEnumerationModification();
+
+        Add(item);
+    }
+
+    public void PushFront(T item)
+    {
+        GuardEnumerationModification();
+
+        if (Full)
+            Grow();
+
+        if (Empty)
+            firstItem = 0;
+
+        firstItem--;
+        if (firstItem == -1)
+            firstItem = blocks.Length * BlockSize - 1;
+        Length++;
+        this[0] = item;
+    }
+
+    public T PopBack()
+    {
+        GuardEnumerationModification();
+
+        if (Empty)
+            throw new InvalidOperationException();
+
+        T item = this[Length - 1];
+        RemoveAt(Length - 1);
+        return item;
+    }
+
+    public T PopFront()
+    {
+        GuardEnumerationModification();
+
+        if (Empty)
+            throw new InvalidOperationException();
+
+        T item = this[0];
+        this[0] = default(T);
+        Length--;
+        firstItem = (firstItem + 1) % (blocks.Length * BlockSize);
+        return item;
+    }
+
     public IEnumerator<T> GetEnumerator()
     {
         return new Enumerator<T>(this);
@@ -402,6 +452,25 @@ public class MyTests
         foreach (int i in d) {
             foreach (int j in d) {}
         }
+    }
+
+    [Test]
+    public void dequeInterfaceWorks()
+    {
+        var d = new Deque<int>();
+        d.PushFront(2);
+        d.PushBack(3);
+        d.PushFront(5);
+        d.PushBack(4);
+        Assert.AreEqual(5, d.PopFront());
+        d.PushFront(1);
+        d.PushFront(0);
+        d.PushBack(10);
+        Assert.AreEqual(10, d.PopBack());
+        d.PushBack(5);
+
+        for (int i = 0; i < 6; i++)
+            Assert.AreEqual(i, d[i]);
     }
 }
 
