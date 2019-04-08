@@ -58,6 +58,8 @@ public class Deque<T> : IList<T>, IEnumerable<T>
     public bool IsSynchronized => false;
     public object SyncRoot => throw new InvalidOperationException();
 
+    private int enumeratorCount = 0;
+
     public Deque(int capacity = BlockSize * 2)
     {
         if (capacity < BlockSize)
@@ -81,6 +83,8 @@ public class Deque<T> : IList<T>, IEnumerable<T>
 
         set
         {
+            GuardEnumerationModification();
+
             if (index < 0 || index >= Length)
                 throw new IndexOutOfRangeException();
 
@@ -91,8 +95,16 @@ public class Deque<T> : IList<T>, IEnumerable<T>
         }
     }
 
+    private void GuardEnumerationModification()
+    {
+        if (enumeratorCount > 0)
+            throw new InvalidOperationException("Deque is beign enumerated, cannot modify.");
+    }
+
     public void Add(T item)
     {
+        GuardEnumerationModification();
+
         if (Full)
             Grow();
 
@@ -111,6 +123,8 @@ public class Deque<T> : IList<T>, IEnumerable<T>
 
     public void Clear()
     {
+        GuardEnumerationModification();
+
         firstItem = 0;
         Length = 0;
 
@@ -155,6 +169,8 @@ public class Deque<T> : IList<T>, IEnumerable<T>
 
     public void Insert(int index, T item)
     {
+        GuardEnumerationModification();
+
         if (index < 0 || index > Length)
             throw new ArgumentOutOfRangeException(nameof(index));
 
@@ -169,6 +185,8 @@ public class Deque<T> : IList<T>, IEnumerable<T>
 
     public void RemoveAt(int index)
     {
+        GuardEnumerationModification();
+
         if (index < 0 || index >= Length)
             throw new ArgumentOutOfRangeException(nameof(index));
 
@@ -181,6 +199,8 @@ public class Deque<T> : IList<T>, IEnumerable<T>
 
     public bool Remove(T item)
     {
+        GuardEnumerationModification();
+
         int index = IndexOf(item);
         
         if (index == -1)
@@ -223,6 +243,7 @@ public class Deque<T> : IList<T>, IEnumerable<T>
         public Enumerator(Deque<U> deque)
         {
             this.deque = deque;
+            deque.enumeratorCount++;
         }
 
         public bool MoveNext()
@@ -240,7 +261,10 @@ public class Deque<T> : IList<T>, IEnumerable<T>
 
         public U Current => deque[position];
 
-        public void Dispose() {}
+        public void Dispose()
+        {
+            deque.enumeratorCount--;
+        }
     }
 }
 
@@ -348,6 +372,36 @@ public class MyTests
         d.RemoveAt(0);
         for (int i = 0; i < 9; i++)
             Assert.AreEqual(i+1, d[i]);
+    }
+
+    [Test]
+    public void enumerationModificationThrows()
+    {
+        var d = new Deque<int>();
+        for (int i = 0; i < 10; i++)
+            d.Add(i);
+
+        foreach (int i in d) {}
+
+        Assert.Throws(typeof(InvalidOperationException), () => {
+            foreach (int i in d) {
+                d[0] = 42;
+            }
+        });
+
+        foreach (int i in d) {
+            break;
+            d[0] = 42;
+        }
+
+        foreach (int i in d) {
+            continue;
+            d[0] = 42;
+        }
+
+        foreach (int i in d) {
+            foreach (int j in d) {}
+        }
     }
 }
 
