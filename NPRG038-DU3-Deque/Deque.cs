@@ -3,6 +3,34 @@ using System.Collections;
 using System.Collections.Generic;
 using NUnit.Framework;
 
+/// <summary>
+/// Interface representing a Deque data structure
+/// </summary>
+public interface IDeque<T> : IEnumerable<T>
+{
+    /// <summary>
+    /// Add element to the end of the queue
+    /// </summary>
+    void PushBack(T item);
+
+    /// <summary>
+    /// Add element to the start of the queue
+    /// </summary>
+    void PushFront(T item);
+
+    /// <summary>
+    /// Pop element from the end of the queue
+    /// Throws InvalidOperationException if empty
+    /// </summary>
+    T PopBack();
+
+    /// <summary>
+    /// Pop element from the start of the queue
+    /// Throws InvalidOperationException if empty
+    /// </summary>
+    T PopFront();
+}
+
 public class Deque<T> : IList<T>, IEnumerable<T>
 {
     public const int BlockSize = 16;
@@ -22,9 +50,6 @@ public class Deque<T> : IList<T>, IEnumerable<T>
     private int firstItem = -1;
     public int Length { get; private set; } = 0;
     public int Count => Length;
-    private int lastItem => (firstItem + Length) % blocks.Length * BlockSize;
-    private int firstBlock => firstItem / BlockSize;
-    private int lastBlock => lastItem / BlockSize;
     public bool Empty => Length == 0;
     public bool Full => Length == blocks.Length * BlockSize;
 
