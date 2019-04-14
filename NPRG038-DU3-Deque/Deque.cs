@@ -341,7 +341,7 @@ public class Deque<T> : IDequeList<T>
             this.deque = deque;
             deque.enumeratorCount++;
 
-            position = deque.Length - 1;
+            position = deque.Length;
         }
 
         public bool MoveNext()
@@ -352,7 +352,7 @@ public class Deque<T> : IDequeList<T>
 
         public void Reset()
         {
-            position = deque.Length - 1;
+            position = deque.Length;
         }
 
         object IEnumerator.Current => Current;
@@ -434,7 +434,7 @@ public class InvertDequeAdapter<T> : IDequeList<T>
 
     IEnumerator IEnumerable.GetEnumerator()
     {
-        return GetEnumerator();
+        return subject.GetInversedEnumerator();
     }
 }
 
@@ -460,17 +460,43 @@ public class MyTests
     [Test]
     public void itCanAddValuesAndIterateOverThem()
     {
-        var d = new Deque<int>();
+        TestDequeBothWays(d => {
+            d.Add(1);
+            d.Add(2);
+            d.Add(3);
 
+            int index = 0;
+            foreach (int item in d)
+            {
+                Assert.AreEqual(index, item - 1);
+                index++;
+            }
+        });
+    }
+
+    [Test]
+    public void inversedEnumerator()
+    {
+        var d = new Deque<int>();
+        d.Add(0);
         d.Add(1);
         d.Add(2);
-        d.Add(3);
 
-        int index = 0;
-        foreach (int item in d)
+        IEnumerator<int> e = d.GetInversedEnumerator();
+        Assert.True(e.MoveNext());
+        Assert.AreEqual(2, e.Current);
+        Assert.True(e.MoveNext());
+        Assert.AreEqual(1, e.Current);
+        Assert.True(e.MoveNext());
+        Assert.AreEqual(0, e.Current);
+        Assert.False(e.MoveNext());
+        e.Dispose();
+
+        int expect = 2;
+        foreach (int i in new InvertDequeAdapter<int>(d))
         {
-            Assert.AreEqual(index, item - 1);
-            index++;
+            Assert.AreEqual(expect, i);
+            expect--;
         }
     }
 
@@ -500,163 +526,169 @@ public class MyTests
     [Test]
     public void indexOfWorks()
     {
-        var d = new Deque<int>();
+        TestDequeBothWays(d => {
+            for (int i = 0; i < 50; i++)
+                d.Add(i);
 
-        for (int i = 0; i < 50; i++)
-            d.Add(i);
+            for (int i = 0; i < 50; i++)
+                Assert.AreEqual(i, d.IndexOf(i));
 
-        for (int i = 0; i < 50; i++)
-            Assert.AreEqual(i, d.IndexOf(i));
-
-        Assert.AreEqual(-1, d.IndexOf(-50));
-        Assert.AreEqual(-1, d.IndexOf(100000));
+            Assert.AreEqual(-1, d.IndexOf(-50));
+            Assert.AreEqual(-1, d.IndexOf(100000));
+        });
     }
 
     [Test]
     public void copyToWorks()
     {
-        var d = new Deque<int>();
+        TestDequeBothWays(d => {
+            for (int i = 0; i < 10; i++)
+                d.Add(i);
 
-        for (int i = 0; i < 10; i++)
-            d.Add(i);
+            int[] array = new int[15];
+            d.CopyTo(array, 5);
 
-        int[] array = new int[15];
-        d.CopyTo(array, 5);
-
-        for (int i = 0; i < 10; i++)
-            Assert.AreEqual(i, array[5 + i]);
+            for (int i = 0; i < 10; i++)
+                Assert.AreEqual(i, array[5 + i]);
+        });
     }
 
     [Test]
     public void insertWorks()
     {
-        var d = new Deque<int>();
+        TestDequeBothWays(d => {
+            for (int i = 0; i < 10; i++)
+                d.Add(i);
 
-        for (int i = 0; i < 10; i++)
-            d.Add(i);
-
-        d.Insert(0, -1);
-        for (int i = 0; i < 11; i++)
-            Assert.AreEqual(i-1, d[i]);
+            d.Insert(0, -1);
+            for (int i = 0; i < 11; i++)
+                Assert.AreEqual(i-1, d[i]);
+        });
     }
 
     [Test]
     public void itCanInsertIntoEmpty()
     {
-        var d = new Deque<int>();
-        d.Insert(0, 42);
+        TestDequeBothWays(d => {
+            d.Insert(0, 42);
 
-        Assert.AreEqual(42, d[0]);
+            Assert.AreEqual(42, d[0]);
+        });
     }
 
     [Test]
     public void removeAtWorks()
     {
-        var d = new Deque<int>();
+        TestDequeBothWays(d => {
+            for (int i = 0; i < 10; i++)
+                d.Add(i);
 
-        for (int i = 0; i < 10; i++)
-            d.Add(i);
-
-        d.RemoveAt(0);
-        for (int i = 0; i < 9; i++)
-            Assert.AreEqual(i+1, d[i]);
+            d.RemoveAt(0);
+            for (int i = 0; i < 9; i++)
+                Assert.AreEqual(i+1, d[i]);
+        });
     }
 
     [Test]
     public void enumerationModificationThrows()
     {
-        var d = new Deque<int>();
-        for (int i = 0; i < 10; i++)
-            d.Add(i);
+        TestDequeBothWays(d => {
+            for (int i = 0; i < 10; i++)
+                d.Add(i);
 
-        foreach (int i in d) {}
+            foreach (int i in d) {}
 
-        Assert.Throws(typeof(InvalidOperationException), () => {
+            Assert.Throws(typeof(InvalidOperationException), () => {
+                foreach (int i in d) {
+                    d[0] = 42;
+                }
+            });
+
             foreach (int i in d) {
+                break;
                 d[0] = 42;
             }
+
+            foreach (int i in d) {
+                continue;
+                d[0] = 42;
+            }
+
+            foreach (int i in d) {
+                foreach (int j in d) {}
+            }
         });
-
-        foreach (int i in d) {
-            break;
-            d[0] = 42;
-        }
-
-        foreach (int i in d) {
-            continue;
-            d[0] = 42;
-        }
-
-        foreach (int i in d) {
-            foreach (int j in d) {}
-        }
     }
 
     [Test]
     public void dequeInterfaceWorks()
     {
-        var d = new Deque<int>();
-        d.PushFront(2);
-        d.PushBack(3);
-        d.PushFront(5);
-        d.PushBack(4);
-        Assert.AreEqual(5, d.PopFront());
-        d.PushFront(1);
-        d.PushFront(0);
-        d.PushBack(10);
-        Assert.AreEqual(10, d.PopBack());
-        d.PushBack(5);
+        TestDequeBothWays(d => {
+            d.PushFront(2);
+            d.PushBack(3);
+            d.PushFront(5);
+            d.PushBack(4);
+            Assert.AreEqual(5, d.PopFront());
+            d.PushFront(1);
+            d.PushFront(0);
+            d.PushBack(10);
+            Assert.AreEqual(10, d.PopBack());
+            d.PushBack(5);
 
-        for (int i = 0; i < 6; i++)
-            Assert.AreEqual(i, d[i]);
+            for (int i = 0; i < 6; i++)
+                Assert.AreEqual(i, d[i]);
+        });
     }
 
     [Test]
     public void simulateQueue()
     {
-        var d = new Deque<int>();
-        d.PushBack(0);
+        TestDequeBothWays(d => {
+            d.PushBack(0);
 
-        for (int i = 0; i < 1000; i++)
-        {
-            d.PushBack(42);
-            d.PopFront();
-        }
+            for (int i = 0; i < 1000; i++)
+            {
+                d.PushBack(42);
+                d.PopFront();
+            }
 
-        Assert.AreEqual(1, d.Length);
-        Assert.AreEqual(42, d[0]);
+            Assert.AreEqual(1, d.Count);
+            Assert.AreEqual(42, d[0]);
+        });
     }
 
     [Test]
     public void simulateReversedQueue()
     {
-        var d = new Deque<int>();
-        d.PushFront(0);
+        TestDequeBothWays(d => {
+            d.PushFront(0);
 
-        for (int i = 0; i < 1000; i++)
-        {
-            d.PushFront(42);
-            d.PopBack();
-        }
+            for (int i = 0; i < 1000; i++)
+            {
+                d.PushFront(42);
+                d.PopBack();
+            }
 
-        Assert.AreEqual(1, d.Length);
-        Assert.AreEqual(42, d[0]);
+            Assert.AreEqual(1, d.Count);
+            Assert.AreEqual(42, d[0]);
+        });
     }
 
     [Test]
     public void insertingToFront()
     {
-        var d = new Deque<int>();
-        d.Insert(0, 0);
+        TestDequeBothWays(d => {
+            d.Insert(0, 0);
 
-        for (int i = 0; i < 1000; i++)
-        {
-            d.Insert(0, 42);
-            d.PopBack();
-        }
+            for (int i = 0; i < 1000; i++)
+            {
+                d.Insert(0, 42);
+                d.PopBack();
+            }
 
-        Assert.AreEqual(1, d.Length);
-        Assert.AreEqual(42, d[0]);
+            Assert.AreEqual(1, d.Count);
+            Assert.AreEqual(42, d[0]);
+        });
     }
 
     [Test]
