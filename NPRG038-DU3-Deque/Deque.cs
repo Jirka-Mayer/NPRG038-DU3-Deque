@@ -31,7 +31,7 @@ public interface IDeque<T> : IEnumerable<T>
     T PopFront();
 }
 
-public class Deque<T> : IList<T>, IDeque<T>, IEnumerable<T>
+public class Deque<T> : IDequeList<T>
 {
     public const int BlockSize = 16;
 
@@ -366,7 +366,9 @@ public class Deque<T> : IList<T>, IDeque<T>, IEnumerable<T>
     }
 }
 
-public class InvertDequeAdapter<T> : IDeque<T>, IList<T>
+public interface IDequeList<T> : IDeque<T>, IList<T> {}
+
+public class InvertDequeAdapter<T> : IDequeList<T>
 {
     private Deque<T> subject;
 
@@ -394,7 +396,7 @@ public class InvertDequeAdapter<T> : IDeque<T>, IList<T>
     public void Add(T item) => subject.PushFront(item);
     public bool Contains(T item) => subject.Contains(item);
     public bool Remove(T item) => subject.Remove(item);
-    public void Insert(int index, T item) => subject.Insert(subject.Length - 1 - index, item);
+    public void Insert(int index, T item) => subject.Insert(subject.Length - index, item);
     public void RemoveAt(int index) => subject.RemoveAt(subject.Length - 1 - index);
 
     public void CopyTo(T[] array, int arrayIndex)
@@ -449,6 +451,12 @@ public static class DequeTest
 [TestFixture]
 public class MyTests
 {
+    protected void TestDequeBothWays(Action<IDequeList<int>> test)
+    {
+        test(new Deque<int>());
+        test(new InvertDequeAdapter<int>(new Deque<int>()));
+    }
+
     [Test]
     public void itCanAddValuesAndIterateOverThem()
     {
@@ -633,6 +641,39 @@ public class MyTests
 
         Assert.AreEqual(1, d.Length);
         Assert.AreEqual(42, d[0]);
+    }
+
+    [Test]
+    public void insertingToFront()
+    {
+        var d = new Deque<int>();
+        d.Insert(0, 0);
+
+        for (int i = 0; i < 1000; i++)
+        {
+            d.Insert(0, 42);
+            d.PopBack();
+        }
+
+        Assert.AreEqual(1, d.Length);
+        Assert.AreEqual(42, d[0]);
+    }
+
+    [Test]
+    public void insertingToBack()
+    {
+        TestDequeBothWays(d => {
+            d.Insert(0, 0);
+
+            for (int i = 0; i < 1000; i++)
+            {
+                d.Insert(d.Count, 42);
+                d.PopFront();
+            }
+
+            Assert.AreEqual(1, d.Count);
+            Assert.AreEqual(42, d[0]);
+        });
     }
 }
 
