@@ -125,7 +125,7 @@ public class Deque<T> : IDequeList<T>
     {
         GuardEnumerationModification();
 
-        firstItem = 0;
+        firstItem = -1;
         Length = 0;
 
         blocks = new Block[2];
@@ -467,8 +467,18 @@ public class MyTests
 {
     protected void TestDequeBothWays(Action<IDequeList<int>> test)
     {
-        test(new Deque<int>());
-        test(new InvertDequeAdapter<int>(new Deque<int>()));
+        var d = new Deque<int>();
+        var id = new InvertDequeAdapter<int>(new Deque<int>());
+
+        test(d);
+        test(id);
+
+        // test clear
+        d.Clear();
+        id.Clear();
+
+        test(d);
+        test(id);
     }
 
     [Test]
