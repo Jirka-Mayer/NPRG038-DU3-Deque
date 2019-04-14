@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using NUnit.Framework;
+//using NUnit.Framework;
 
 /// <summary>
 /// Interface representing a Deque data structure
@@ -405,12 +405,36 @@ public class InvertDequeAdapter<T> : IDequeList<T>
         }
     }
     
-    public int IndexOf(T item)
+    public int IndexOf(T value)
     {
-        int index = subject.IndexOf(item);
-        if (index == -1)
-            return -1;
-        return subject.Length - 1 - index;
+        // Kopírování je častým zrojem chyb, ale co...
+
+        EqualityComparer<T> c = EqualityComparer<T>.Default;
+
+        int index = 0;
+        
+        if (value != null)
+        {
+            foreach (T item in this)
+            {
+                if (c.Equals(item, value))
+                    return index;
+
+                index++;
+            }
+        }
+        else
+        {
+            foreach (T item in this)
+            {
+                if (item == null)
+                    return index;
+
+                index++;
+            }
+        }
+
+        return -1;
     }
 
 
@@ -433,7 +457,7 @@ public static class DequeTest
 	}
 }
 
-/**/
+/*/
 
 [TestFixture]
 public class MyTests
@@ -761,6 +785,18 @@ public class MyTests
             Assert.AreEqual(-1, d.IndexOf(0));
             Assert.AreEqual(-1, d.IndexOf(-42));
         });
+    }
+
+    [Test]
+    public void KcolTest()
+    {
+        var IntQue = new Deque<int>() { 1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6 };
+
+        for (int i = 0; i < 6; i++)
+            Assert.AreEqual(i+1, IntQue[i]);
+
+        Assert.AreEqual(0, IntQue.IndexOf(1));
+        Assert.AreEqual(5, new InvertDequeAdapter<int>(IntQue).IndexOf(1));
     }
 }
 
