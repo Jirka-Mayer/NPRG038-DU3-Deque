@@ -177,7 +177,16 @@ public class Deque<T> : IList<T>, IDeque<T>, IEnumerable<T>
         if (Full)
             Grow();
 
-        Length++;
+        if (Empty)
+        {
+            firstItem = 0;
+            Length = 1;
+        }
+        else
+        {
+            Length++;
+        }
+        
         for (int i = Length - 1; i > index; i--)
             this[i] = this[i - 1];
         this[index] = item;
@@ -524,6 +533,15 @@ public class MyTests
     }
 
     [Test]
+    public void itCanInsertIntoEmpty()
+    {
+        var d = new Deque<int>();
+        d.Insert(0, 42);
+
+        Assert.AreEqual(42, d[0]);
+    }
+
+    [Test]
     public void removeAtWorks()
     {
         var d = new Deque<int>();
@@ -583,6 +601,38 @@ public class MyTests
 
         for (int i = 0; i < 6; i++)
             Assert.AreEqual(i, d[i]);
+    }
+
+    [Test]
+    public void simulateQueue()
+    {
+        var d = new Deque<int>();
+        d.PushBack(0);
+
+        for (int i = 0; i < 1000; i++)
+        {
+            d.PushBack(42);
+            d.PopFront();
+        }
+
+        Assert.AreEqual(1, d.Length);
+        Assert.AreEqual(42, d[0]);
+    }
+
+    [Test]
+    public void simulateReversedQueue()
+    {
+        var d = new Deque<int>();
+        d.PushFront(0);
+
+        for (int i = 0; i < 1000; i++)
+        {
+            d.PushFront(42);
+            d.PopBack();
+        }
+
+        Assert.AreEqual(1, d.Length);
+        Assert.AreEqual(42, d[0]);
     }
 }
 
