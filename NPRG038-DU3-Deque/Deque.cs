@@ -315,20 +315,12 @@ public class Deque<T> : IDequeList<T>
 
     public IEnumerator<T> GetEnumerator()
     {
-        using (new EnumeratorCoutner<T>(this))
-        {
-            for (int i = 0; i < Length; i++)
-            yield return this[i];
-        }
+        return new Enumerator<T>(this);
     }
 
     public IEnumerator<T> GetInversedEnumerator()
     {
-        using (new EnumeratorCoutner<T>(this))
-        {
-            for (int i = Length - 1; i >= 0; i--)
-                yield return this[i];
-        }
+        return new InversedEnumerator<T>(this);
     }
 
     IEnumerator IEnumerable.GetEnumerator()
@@ -336,19 +328,69 @@ public class Deque<T> : IDequeList<T>
         return GetEnumerator();
     }
 
-    private class EnumeratorCoutner<U> : IDisposable
+    public class Enumerator<U> : IEnumerator<U>
     {
-        private Deque<U> subject;
+        public Deque<U> deque;
+        int position = -1;
 
-        public EnumeratorCoutner(Deque<U> subject)
+        public Enumerator(Deque<U> deque)
         {
-            this.subject = subject;
-            subject.enumeratorCount++;
+            this.deque = deque;
+            deque.enumeratorCount++;
         }
+
+        public bool MoveNext()
+        {
+            position++;
+            return (position < deque.Length);
+        }
+
+        public void Reset()
+        {
+            position = -1;
+        }
+
+        object IEnumerator.Current => Current;
+
+        public U Current => deque[position];
 
         public void Dispose()
         {
-            subject.enumeratorCount--;
+            deque.enumeratorCount--;
+        }
+    }
+
+    public class InversedEnumerator<U> : IEnumerator<U>
+    {
+        public Deque<U> deque;
+        int position;
+
+        public InversedEnumerator(Deque<U> deque)
+        {
+            this.deque = deque;
+            deque.enumeratorCount++;
+
+            position = deque.Length;
+        }
+
+        public bool MoveNext()
+        {
+            position--;
+            return (position >= 0);
+        }
+
+        public void Reset()
+        {
+            position = deque.Length;
+        }
+
+        object IEnumerator.Current => Current;
+
+        public U Current => deque[position];
+
+        public void Dispose()
+        {
+            deque.enumeratorCount--;
         }
     }
 }
@@ -407,8 +449,6 @@ public class InvertDequeAdapter<T> : IDequeList<T>
     
     public int IndexOf(T value)
     {
-        // Kopírování je častým zrojem chyb, ale co...
-
         EqualityComparer<T> c = EqualityComparer<T>.Default;
 
         int index = 0;
@@ -749,55 +789,6 @@ public class MyTests
     }
 
     private class Foo {}
-
-    [Test]
-    public void foreachOnEmpty()
-    {
-        TestDequeBothWays(d => {
-            foreach (int i in d)
-                Assert.Fail();
-        });
-    }
-
-    [Test]
-    public void simulateReversedEmptyQueue()
-    {
-        TestDequeBothWays(d => {
-            for (int i = 0; i < 1000; i++)
-            {
-                d.PushFront(42);
-                
-                Assert.AreEqual(1, d.Count);
-                Assert.AreEqual(42, d[0]);
-                
-                d.PopBack();
-
-                Assert.AreEqual(0, d.Count);
-            }
-        });
-    }
-
-    [Test]
-    public void indexOfOnEmpty()
-    {
-        TestDequeBothWays(d => {
-            Assert.AreEqual(-1, d.IndexOf(5));
-            Assert.AreEqual(-1, d.IndexOf(0));
-            Assert.AreEqual(-1, d.IndexOf(-42));
-        });
-    }
-
-    [Test]
-    public void KcolTest()
-    {
-        var IntQue = new Deque<int>() { 1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6 };
-
-        for (int i = 0; i < 6; i++)
-            Assert.AreEqual(i+1, IntQue[i]);
-
-        Assert.AreEqual(0, IntQue.IndexOf(1));
-        Assert.AreEqual(5, new InvertDequeAdapter<int>(IntQue).IndexOf(1));
-    }
 }
 
 /**/
