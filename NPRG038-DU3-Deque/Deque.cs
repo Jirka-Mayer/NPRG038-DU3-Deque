@@ -767,6 +767,43 @@ public class MyTests
     }
 
     private class Foo {}
+
+    [Test]
+    public void foreachOnEmpty()
+    {
+        TestDequeBothWays(d => {
+            foreach (int i in d)
+                Assert.Fail();
+        });
+    }
+
+    [Test]
+    public void simulateReversedEmptyQueue()
+    {
+        TestDequeBothWays(d => {
+            for (int i = 0; i < 1000; i++)
+            {
+                d.PushFront(42);
+                
+                Assert.AreEqual(1, d.Count);
+                Assert.AreEqual(42, d[0]);
+                
+                d.PopBack();
+
+                Assert.AreEqual(0, d.Count);
+            }
+        });
+    }
+
+    [Test]
+    public void indexOfOnEmpty()
+    {
+        TestDequeBothWays(d => {
+            Assert.AreEqual(-1, d.IndexOf(5));
+            Assert.AreEqual(-1, d.IndexOf(0));
+            Assert.AreEqual(-1, d.IndexOf(-42));
+        });
+    }
 }
 
 /**/
