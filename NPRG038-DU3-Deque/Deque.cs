@@ -139,7 +139,7 @@ public class Deque<T> : IDequeList<T>
         
         foreach (T i in this)
         {
-            if (i.Equals(item))
+            if (i == null ? item == null : i.Equals(item))
                 return index;
 
             index++;
@@ -731,6 +731,27 @@ public class MyTests
             Assert.AreEqual(42, d[0]);
         });
     }
+
+    [Test]
+    public void indexOfFindsNullValues()
+    {
+        var dd = new Deque<Foo>();
+
+        var a = new Foo();
+        var b = new Foo();
+        var c = new Foo();
+        var d = new Foo();
+
+        dd.Add(a);
+        dd.Add(b);
+        dd.Add(null);
+        dd.Add(d);
+
+        Assert.AreEqual(2, dd.IndexOf(null));
+        Assert.AreEqual(3, dd.IndexOf(d)); // can search past the null value without an exception
+    }
+
+    private class Foo {}
 }
 
 /**/
