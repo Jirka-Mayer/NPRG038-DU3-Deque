@@ -133,16 +133,31 @@ public class Deque<T> : IDequeList<T>
 
     public bool Contains(T item) => IndexOf(item) != -1;
 
-    public int IndexOf(T item)
+    public int IndexOf(T value)
     {
+        EqualityComparer<T> c = EqualityComparer<T>.Default;
+
         int index = 0;
         
-        foreach (T i in this)
+        if (value != null)
         {
-            if (i == null ? item == null : i.Equals(item))
-                return index;
+            foreach (T item in this)
+            {
+                if (c.Equals(item, value))
+                    return index;
 
-            index++;
+                index++;
+            }
+        }
+        else
+        {
+            foreach (T item in this)
+            {
+                if (item == null)
+                    return index;
+
+                index++;
+            }
         }
 
         return -1;
