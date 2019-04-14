@@ -169,6 +169,13 @@ public class Deque<T> : IDequeList<T>
 
     public void Insert(int index, T item)
     {
+        // optimization
+        if (index == 0)
+        {
+            PushFront(item);
+            return;
+        }
+
         GuardEnumerationModification();
 
         if (index < 0 || index > Length)
@@ -194,6 +201,13 @@ public class Deque<T> : IDequeList<T>
 
     public void RemoveAt(int index)
     {
+        // optimization
+        if (index == 0)
+        {
+            PopFront();
+            return;
+        }
+
         GuardEnumerationModification();
 
         if (index < 0 || index >= Length)
