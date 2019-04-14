@@ -315,12 +315,20 @@ public class Deque<T> : IDequeList<T>
 
     public IEnumerator<T> GetEnumerator()
     {
-        return new Enumerator<T>(this);
+        using (new EnumeratorCoutner<T>(this))
+        {
+            for (int i = 0; i < Length; i++)
+            yield return this[i];
+        }
     }
 
     public IEnumerator<T> GetInversedEnumerator()
     {
-        return new InversedEnumerator<T>(this);
+        using (new EnumeratorCoutner<T>(this))
+        {
+            for (int i = Length - 1; i >= 0; i--)
+                yield return this[i];
+        }
     }
 
     IEnumerator IEnumerable.GetEnumerator()
@@ -328,69 +336,19 @@ public class Deque<T> : IDequeList<T>
         return GetEnumerator();
     }
 
-    public class Enumerator<U> : IEnumerator<U>
+    private class EnumeratorCoutner<U> : IDisposable
     {
-        public Deque<U> deque;
-        int position = -1;
+        private Deque<U> subject;
 
-        public Enumerator(Deque<U> deque)
+        public EnumeratorCoutner(Deque<U> subject)
         {
-            this.deque = deque;
-            deque.enumeratorCount++;
+            this.subject = subject;
+            subject.enumeratorCount++;
         }
-
-        public bool MoveNext()
-        {
-            position++;
-            return (position < deque.Length);
-        }
-
-        public void Reset()
-        {
-            position = -1;
-        }
-
-        object IEnumerator.Current => Current;
-
-        public U Current => deque[position];
 
         public void Dispose()
         {
-            deque.enumeratorCount--;
-        }
-    }
-
-    public class InversedEnumerator<U> : IEnumerator<U>
-    {
-        public Deque<U> deque;
-        int position;
-
-        public InversedEnumerator(Deque<U> deque)
-        {
-            this.deque = deque;
-            deque.enumeratorCount++;
-
-            position = deque.Length;
-        }
-
-        public bool MoveNext()
-        {
-            position--;
-            return (position >= 0);
-        }
-
-        public void Reset()
-        {
-            position = deque.Length;
-        }
-
-        object IEnumerator.Current => Current;
-
-        public U Current => deque[position];
-
-        public void Dispose()
-        {
-            deque.enumeratorCount--;
+            subject.enumeratorCount--;
         }
     }
 }
